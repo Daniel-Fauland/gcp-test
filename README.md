@@ -1,6 +1,6 @@
-# gcp-test
+# Google Cloud Platform Tutorial
 
-Various tests for GCP
+Various hands-on tutorials for differnt gcp services
 
 ## Cloud functions
 

@@ -341,7 +341,7 @@ In order to setup a Pub/Sub a few steps are necessary:
     General code snippet:
 
     ```shell
-    gcloud scheduler jobs create http db-scheduler-pubsub \
+    gcloud scheduler jobs create http <schedule-name> \
     --schedule="0 4 * * *" \
     --http-method=POST \
     --uri="your-cloud-functions-url" \
@@ -354,7 +354,7 @@ In order to setup a Pub/Sub a few steps are necessary:
     Example code snippet:
 
     ```shell
-    gcloud scheduler jobs create http <schedule-name> \
+    gcloud scheduler jobs create http db-scheduler-pubsub \
     --schedule="0 4 * * *" \
     --http-method=POST \
     --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/db-func-pubsub" \
