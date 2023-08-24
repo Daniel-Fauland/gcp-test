@@ -12,19 +12,20 @@ Contents:
 
 In case you don't have your own python script for testing you can use the provided scripts for each chapter.
 
-| Chapter                                                                           | Python script                                                                                                               |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [chapter 1](#1-cloud-functions-http-trigger-without-authentication)               | [1-dbz_db-cloud_function-short.py](./code/1-dbz_db-cloud_function-short.py)                                                 |
-| [chapter 2](#2-cloud-functions-http-trigger-with-authentication)                  | [1-dbz_db-cloud_function-short.py](./code/1-dbz_db-cloud_function-short.py)                                                 |
-| [chapter 3](#3-parameterize-script-in-cloud-functions)                            | [3-dbz_db-cloud_function-short-parameterized.py](./code/3-dbz_db-cloud_function-short-parameterized.py)                     |
-| [chapter 4](#4-schedule-a-non-paremterized-cloud-function-using-cloud-scheduler)  | [1-dbz_db-cloud_function-short.py](./code/1-dbz_db-cloud_function-short.py)                                                 |
-| [chapter 5](#5-schedule-a-parameterized-cloud-function-using-gcloud-command-line) | [5-dbz_db-cloud_function-short-parameterized-scheduled.py](./code/5-dbz_db-cloud_function-short-parameterized-scheduled.py) |
+| Chapter                                                                           | Python script                                                                                                                 |
+| --------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [chapter 1](#1-cloud-functions-http-trigger-without-authentication)               | [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py)                                                 |
+| [chapter 2](#2-cloud-functions-http-trigger-with-authentication)                  | [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py)                                                 |
+| [chapter 3](#3-parameterize-script-in-cloud-functions)                            | [3-dbz_db-cloud_function-short-parameterized.py](./code/3/3-dbz_db-cloud_function-short-parameterized.py)                     |
+| [chapter 4](#4-schedule-a-non-paremterized-cloud-function-using-cloud-scheduler)  | [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py)                                                 |
+| [chapter 5](#5-schedule-a-parameterized-cloud-function-using-gcloud-command-line) | [5-dbz_db-cloud_function-short-parameterized-scheduled.py](./code/5/5-dbz_db-cloud_function-short-parameterized-scheduled.py) |
+| [chapter 6](#6-trigger-action-based-on-event-using-pubsub)                        | [publisher/main.py](./code/6/publisher/main.py) & [subscriber/main.py](./code/6/subscriber/main.py)                           |
 
 As these scripts will create files in a csv storage bucket make sure you [create a gcp storage bucket](https://cloud.google.com/storage/docs/creating-buckets) and you adjust the gcp credentials _project_id_ & _bucket_name_ (in function _start_script_) in the python file.
 
 ## 1. Cloud Functions HTTP trigger without authentication
 
-(Use [1-dbz_db-cloud_function-short.py](./code/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
+(Use [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
 
 Simplest form of cloud function. HTTP trigger without authentication means that everyone who knows the url can trigger the functions from any console everywhere in the world without needing any kind of authentication.
 In order to configue a cloud function without authentication follow these steps:
@@ -72,7 +73,7 @@ In order to configue a cloud function without authentication follow these steps:
 
 ## 2. Cloud Functions HTTP trigger with authentication
 
-(Use [1-dbz_db-cloud_function-short.py](./code/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
+(Use [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
 
 Prerequisites:
 
@@ -109,7 +110,7 @@ Follow the basic steps mentioned above but include following changes:
 
 ## 3. Parameterize script in cloud functions
 
-(Use [3-dbz_db-cloud_function-short-parameterized.py](./code/3-dbz_db-cloud_function-short-parameterized.py) if you don't have your own python script).
+(Use [3-dbz_db-cloud_function-short-parameterized.py](./code/3/3-dbz_db-cloud_function-short-parameterized.py) if you don't have your own python script).
 
 You can also parameterize your script in cloud functions. This is always recommended as you can use the same script for different instances/projects. Follow the basic steps mentioned in part 2 but include the following changes:
 
@@ -145,7 +146,7 @@ You can also parameterize your script in cloud functions. This is always recomme
 
 ## 4. Schedule a non paremterized cloud function using Cloud Scheduler
 
-(Use [1-dbz_db-cloud_function-short.py](./code/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
+(Use [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
 
 We will schedule the cloud function deployed in step 3.
 Note that it is not possible to pass arguments
@@ -170,7 +171,7 @@ Note that it is not possible to pass arguments
 
 ## 5. Schedule a parameterized cloud function using gcloud command line
 
-(Use [5-dbz_db-cloud_function-short-parameterized-scheduled.py](./code/5-dbz_db-cloud_function-short-parameterized-scheduled.py) if you don't have your own python script).
+(Use [5-dbz_db-cloud_function-short-parameterized-scheduled.py](./code/5/5-dbz_db-cloud_function-short-parameterized-scheduled.py) if you don't have your own python script).
 
 Following the steps mentioned in [chapter 4](#4-schedule-a-non-paremterized-cloud-function-using-cloud-scheduler) won't work if you want to pass variables with cloud scheduler.
 However it is possible to pass a json object.
@@ -188,12 +189,13 @@ However it is possible to pass a json object.
    General code snippet:
 
    ```shell
-   gcloud scheduler jobs create http db-scheduler-gcloud \
+   gcloud scheduler jobs create http <schedule-name> \
    --schedule="0 4 * * *" \
    --http-method=POST \
    --uri="your-cloud-functions-url" \
    --message-body='{"project_id": "your-project-id", "bucket_name": "your-bucket"}' \
    --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+   --attempt-deadline=1800s \
    --location='your-region'
    ```
 
@@ -206,6 +208,7 @@ However it is possible to pass a json object.
    --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/dokkan-battle-function-parameterized" \
    --message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447"}' \
    --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+   --attempt-deadline=1800s \
    --location='europe-west3'
    ```
 
@@ -222,3 +225,141 @@ However it is possible to pass a json object.
    ```shell
    curl -X POST -H "Authorization: bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447"}' https://europe-west3-propane-nomad-396712.cloudfunctions.net/dokkan-battle-function-parameterized
    ```
+
+## 6. Trigger action based on event using Pub/Sub
+
+(Use [6-dbz_db-cloud_function-short-pubsub.py)](./code/6/publisher/6-dbz_db-cloud_function-short-pubsub.py) and [6-pubsub-action.py](./code/6/subscriber/6-pubsub-action.py) if you don't have your own python script)
+
+If you want to schedule certain tasks event based instead instead of time based you can use a service like [Pub/Sub](https://cloud.google.com/pubsub/docs/overview). The example python script will create files in the gcp storage bucket with a timestamp. One way of deleting older files within this bucket is to setup a "clean-up" cloud function that is triggered whenever cloud scheduler successfully executed the main cloud function. In this particular use case, alternative (faster) solutions are available, such as implementing file retention within a GCP storage bucket. However, it's important to note that these alternatives are static in nature. They would consistently delete files once the defined retention period is met, regardless of whether cloud functions have effectively generated these files.
+In order to setup a Pub/Sub a few steps are necessary:
+
+1.  Prepare a script for another cloud function that will be triggered by the Pub/Sub setup. (e.g. [6-pubsub-action.py](./code/6/subscriber/6-pubsub-action.py))
+2.  In your main cloud function script you need to specify a publish message for your Pub/Sub setup. Therefore you need to add something like this at the end of your sript:
+
+    ```python
+    from google.cloud import pubsub_v1
+
+        # Publish a message to the Pub/Sub topic
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = f'projects/{project_id}/topics/{topic_name}'
+        data = {"project_id": project_id, "bucket_name": bucket_name}
+        publisher.publish(topic_path, data=data)
+    ```
+
+    It's a good idea to parameterize the main cloud function and the second cloud function that will be triggered by your Pub/Sub setup so that you only need to changes variables in your cloud scheduler
+
+3.  Now you need to create the Pub/Sub topic where your main cloud function can actually publish a message to. This can be done easily via gcloud in terminal.
+
+    General code snippet:
+
+    ```shell
+    gcloud pubsub topics <topic-name>
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud pubsub topics create db-topic
+    ```
+
+4.  Now deploy the main function using http trigger. This function will later be triggered by cloud scheduler. This can also be deployed via gcloud command.
+
+    General code snippet:
+
+    ```shell
+    gcloud functions deploy <function-name> \
+    --runtime=python310 \
+    --trigger-http \
+    --entry-point=entry_point \
+    --region=region \
+    --max-instances=1 \
+    --timeout=3500s \
+    --memory=1GiB \
+    --service-account=<your-service-acc> \
+    --ingress-settings=all \
+    --gen2 \
+    --source=./path/to/directory/
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud functions deploy db-func-pubsub \
+    --runtime=python310 \
+    --trigger-http \
+    --entry-point=start_script \
+    --region=europe-west3 \
+    --max-instances=1 \
+    --timeout=3500s \
+    --memory=1GiB \
+    --service-account=973117053722-compute@developer.gserviceaccount.com \
+    --ingress-settings=all \
+    --no-allow-unauthenticated \
+    --gen2 \
+    --source=./cloud_functions/code/6/publisher/
+    ```
+
+5.  Now deploy the other cloud function using Pub/Sub trigger which will be executed once the main cloud function publishes a message on a topic this function is subscribed to.
+
+    General code snippet:
+
+    ```shell
+    gcloud functions deploy <function-name> \
+    --runtime=python310 \
+    --trigger-topic=<topic-name> \
+    --entry-point=pubsub_handler \
+    --region=region \
+    --max-instances=1 \
+    --timeout=60s \
+    --memory=256MiB \
+    --service-account=<your-service-acc> \
+    --ingress-settings=all \
+    --gen2 \
+    --source=./path/to/directory/
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud functions deploy func-pubsub-subscriber \
+    --runtime=python310 \
+    --trigger-topic=db-topic \
+    --entry-point=pubsub_handler \
+    --region=europe-west3 \
+    --max-instances=1 \
+    --timeout=120s \
+    --memory=256MiB \
+    --service-account=973117053722-compute@developer.gserviceaccount.com \
+    --ingress-settings=all \
+    --allow-unauthenticated \
+    --gen2 \
+    --source=./cloud_functions/code/6/subscriber/
+    ```
+
+6.  Optional: Deploy a Cloud scheduler that will run your pubsub function on a daily basis.
+
+    General code snippet:
+
+    ```shell
+    gcloud scheduler jobs create http db-scheduler-pubsub \
+    --schedule="0 4 * * *" \
+    --http-method=POST \
+    --uri="your-cloud-functions-url" \
+    --message-body='{"project_id": "your-project-id", "bucket_name": "your-bucket", "topic_name": "your-topic"}' \
+    --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+    --attempt-deadline=1800s \
+    --location='your-region'
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud scheduler jobs create http <schedule-name> \
+    --schedule="0 4 * * *" \
+    --http-method=POST \
+    --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/db-func-pubsub" \
+    --message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447", "prefix_path": "dokkan-battle", "topic_name": "db-topic"}' \
+    --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+    --attempt-deadline=1800s \
+    --location='europe-west3'
+    ```
