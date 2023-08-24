@@ -9,6 +9,7 @@ Contents:
 3. [Parameterize script in cloud functions](#3-parameterize-script-in-cloud-functions)
 4. [Schedule a non paremterized cloud function using Cloud Scheduler](#4-schedule-a-non-paremterized-cloud-function-using-cloud-scheduler)
 5. [Schedule a parameterized cloud function using gcloud command line](#5-schedule-a-parameterized-cloud-function-using-gcloud-command-line)
+6. [Trigger action based on event using Pub/Sub](#6-trigger-action-based-on-event-using-pubsub)
 
 In case you don't have your own python script for testing you can use the provided scripts for each chapter.
 
@@ -148,8 +149,8 @@ You can also parameterize your script in cloud functions. This is always recomme
 
 (Use [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
 
-We will schedule the cloud function deployed in step 3.
-Note that it is not possible to pass arguments
+Schedule the cloud function deployed in step 3. <br />
+**Note:** It is not possible to pass arguments this way. If you want to pass one or more arguments through the cloud scheduler refer to [chapter 5](#5-schedule-a-parameterized-cloud-function-using-gcloud-command-line).
 
 1. Go to Cloud Scheduler and click _"Create job"_
 2. Choose your preferred name, region and give a description
@@ -174,7 +175,7 @@ Note that it is not possible to pass arguments
 (Use [5-dbz_db-cloud_function-short-parameterized-scheduled.py](./code/5/5-dbz_db-cloud_function-short-parameterized-scheduled.py) if you don't have your own python script).
 
 Following the steps mentioned in [chapter 4](#4-schedule-a-non-paremterized-cloud-function-using-cloud-scheduler) won't work if you want to pass variables with cloud scheduler.
-However it is possible to pass a json object.
+However it is possible to pass a json object instead.
 
 1. An adjustment in the python script is needed to process json
    ```python
@@ -182,7 +183,7 @@ However it is possible to pass a json object.
    project_id = data.get('project_id')
    bucket_name = data.get('bucket_name')
    ```
-2. In the header part we need to set _Content-Type=application/json_ otherwise python only retrieves _None_ values for the json object
+2. In the header part you need to set _Content-Type=application/json_ otherwise python only retrieves _None_ values for the json object
 3. In the message body part we can specify the json we want to pass to the python script
 4. It's possible to completely configure/deploy the cloud scheduler using gcloud. It can be used from any terminal as long as it has gcloud CLI installed, the user is authenticated and has the permission (_cloudscheduler.jobs.create_) to create a cloud schedule job.
 
@@ -363,3 +364,9 @@ In order to setup a Pub/Sub a few steps are necessary:
     --attempt-deadline=1800s \
     --location='europe-west3'
     ```
+
+## 7. Cloud function deployment using terraform (COMING SOON)
+
+For deploying a cloud function using terraform refer to this [guide](../terraform/README.md).
+
+## 8. Cloud function deployment based on GitHub push using cloud build (COMING SOON)
