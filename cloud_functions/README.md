@@ -37,8 +37,8 @@ In order to configue a cloud function without authentication follow these steps:
 3. Use 2nd gen env if possible (more features like higher runtime)
 4. Choose a function name (e.g. _"db-func"_) and your preferred region (e.g. _"europe-west3"_)
 5. Choose HTTP Trigger (usually preselected) and check _"Allow unauthenticated invocations"_
-6. In the runtime section select your memory. (1Gib needed for this example)
-7. Timeout let's you decide after how much time the function will abort (at least 15 minutes is needed for this example)
+6. In the runtime section select your memory
+7. Timeout let's you decide after how much time the function will abort
 8. In the connections section you can select which traffic is allowed for your script. (_"Allow all traffic"_ is needed for this example as it pulls data from external websites)
 9. Click on _"next"_ and select your runtime. (Choose python 3.10 or higher for this example)
 10. Add your script to _main.py_
@@ -145,11 +145,14 @@ You can also parameterize your script in cloud functions. This is always recomme
   curl -X POST -H "Authorization: bearer $(gcloud auth print-identity-token)" -d "project_id=propane-nomad-396712" -d "bucket_name=de-storage-447" https://europe-west3-propane-nomad-396712.cloudfunctions.net/db-func-auth-params
   ```
 
-## 4. Schedule a non paremterized cloud function using Cloud Scheduler
+## 4. Schedule a non parameterized cloud function using Cloud Scheduler
 
 (Use [1-dbz_db-cloud_function-short.py](./code/1/1-dbz_db-cloud_function-short.py) if you don't have your own python script).
 
-Schedule the cloud function deployed in step 3. <br />
+**Prerequisites:**
+You should create a service account for Cloud scheduler. This is needed in order to invoke cloud functions that require authentication. A guide how to create a service account can be found [here](../iam/README.md).
+
+Schedule the cloud function deployed in step 2. <br />
 **Note:** It is not possible to pass arguments this way. If you want to pass one or more arguments through the cloud scheduler refer to [chapter 5](#5-schedule-a-parameterized-cloud-function-using-gcloud-command-line).
 
 1. Go to Cloud Scheduler and click _"Create job"_
@@ -162,13 +165,31 @@ Schedule the cloud function deployed in step 3. <br />
 5. Under the section _"Configure the execution"_ choose _"HTTP"_ as the target type
 6. Enter your cloud functions url
 7. HTTP method is "_POST_" in most cases
-8. If your cloud function needs authentication you must add a Header. Name 1 = "Authentication" and Value 1 = "_your-identity-token_". You can get the identity token by running the following command in your terminal (GCP CLI required):
-   ```shell
-   gcloud auth print-identity-token
-   ```
+8. If your cloud function needs authentication you must use OIDC or OAuth. OIDC is preferred as it can be used to authenticate not only internal gcp services but third party services as well.
+   It is effectivly not possible to use the identity token as shown in [chapter 2](#2-cloud-functions-http-trigger-with-authentication) or [chapter 3](#3-parameterize-script-in-cloud-functions). You could in theory get the current identity token and add "Authenticaton" as key and your token as value in the HTTP Header. However the identity token runs out after 60 minutes. Therefore using a static token with limited lifespan makes the cloud scheduler effectively useless. This is why you should authenticate your cloud resources with a service account instead. <br />
+   Select OIDC as auth header and choose your service account. Audience can be left blank as it will default to your cloud function url anyway.
 9. Under the section _"Configure optional settings"_ you can specify the retries amount in case your cloud function fails.
-10. With the option _"Attempt deadline config"_ you can configure when the cloud scheduler will abort the task. The maximum duration that can be selected is 30 minutes. Therefore it effectively limits the runtime of a scheduled cloud function to 30 minutes as it will abort otherwise. (For this example select 30 minutes)
-11. Create the schedule. **Note:** The _"Status of last execution"_ will only update after the script either finishes sucessfully or throws any kind of exception
+10. With the option _"Attempt deadline config"_ you can configure when the cloud scheduler will abort the task. The maximum duration that can be selected is 30 minutes. Therefore it effectively limits the runtime of a scheduled cloud function to 30 minutes as it will abort otherwise.
+11. Create the schedule. **Note:** The _"Status of last execution"_ will only update after the script either finishes sucessfully or returns any kind of exception (assuming permissions are granted to invoke the cloud function)
+12. **Important:** You must assign the Invoker role (roles/run.invoker) through Cloud Run for 2nd gen functions if you want to allow the function to receive requests from additional principals or other given authorities in IAM. Therefore you need to grant the cloud function the permission to be invoked by a service account.
+
+    General code snippet:
+
+    ```shell
+    gcloud functions add-invoker-policy-binding <function-name> \
+        --member="serviceAccount:<service-acc-name>@<project-id>.iam.gserviceaccount.com" \
+        --region='<your-region>'
+    ```
+
+    Examle code snippet:
+
+    ```shell
+    gcloud functions add-invoker-policy-binding test-func-scheduled \
+        --member="serviceAccount:cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com" \
+        --region='europe-west3'
+    ```
+
+    Keep in mind that it can take a few minutes until the permissions granted this way take effect. If cloud scheduler fails to invoke the cloud function shortly after deploying wait a few minutes and try again.
 
 ## 5. Schedule a parameterized cloud function using gcloud command line
 
@@ -195,9 +216,10 @@ However it is possible to pass a json object instead.
    --http-method=POST \
    --uri="your-cloud-functions-url" \
    --message-body='{"project_id": "your-project-id", "bucket_name": "your-bucket"}' \
-   --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
-   --attempt-deadline=1800s \
-   --location='your-region'
+   --headers="Content-Type=application/json" \
+   --attempt-deadline=60s \
+   --location='your-region' \
+   --oidc--service-account-email=<service-acc-name>@<project-id>.iam.gserviceaccount.com
    ```
 
    Example code snippet:
@@ -208,12 +230,33 @@ However it is possible to pass a json object instead.
    --http-method=POST \
    --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/dokkan-battle-function-parameterized" \
    --message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447"}' \
-   --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+   --headers="Content-Type=application/json" \
    --attempt-deadline=1800s \
-   --location='europe-west3'
+   --location='europe-west3' \
+   --oidc-service-account-email=cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com
    ```
 
-5. Optional: It's also possible to manully trigger the cloud function and pass a json object using _curl_:
+5. You must assign the Invoker role (roles/run.invoker) through Cloud Run for 2nd gen functions if you want to allow the function to receive requests from additional principals or other given authorities in IAM. Therefore you need to grant the cloud function the permission to be invoked by a service account.
+
+   General code snippet:
+
+   ```shell
+   gcloud functions add-invoker-policy-binding <function-name> \
+       --member="serviceAccount:<service-acc-name>@<project-id>.iam.gserviceaccount.com" \
+       --region='<your-region>'
+   ```
+
+   Examle code snippet:
+
+   ```shell
+   gcloud functions add-invoker-policy-binding dokkan-battle-function-parameterized \
+       --member="serviceAccount:cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com" \
+       --region='europe-west3'
+   ```
+
+   Keep in mind that it can take a few minutes until the permissions granted this way take effect. If cloud scheduler fails to invoke the cloud function shortly after deploying wait a few minutes and try again.
+
+6. Optional: It's also possible to manully trigger the cloud function and pass a json object using _curl_:
 
    General code snippet:
 
@@ -274,10 +317,11 @@ In order to setup a Pub/Sub a few steps are necessary:
     --entry-point=entry_point \
     --region=region \
     --max-instances=1 \
-    --timeout=3500s \
-    --memory=1GiB \
+    --timeout=60s \
+    --memory=256MiB \
     --service-account=<your-service-acc> \
     --ingress-settings=all \
+    --no-allow-unauthenticated \
     --gen2 \
     --source=./path/to/directory/
     ```
@@ -328,11 +372,11 @@ In order to setup a Pub/Sub a few steps are necessary:
     --entry-point=pubsub_handler \
     --region=europe-west3 \
     --max-instances=1 \
-    --timeout=120s \
+    --timeout=60s \
     --memory=256MiB \
     --service-account=973117053722-compute@developer.gserviceaccount.com \
     --ingress-settings=all \
-    --allow-unauthenticated \
+    --no-allow-unauthenticated \
     --gen2 \
     --source=./cloud_functions/code/6/subscriber/
     ```
@@ -347,9 +391,10 @@ In order to setup a Pub/Sub a few steps are necessary:
     --http-method=POST \
     --uri="your-cloud-functions-url" \
     --message-body='{"project_id": "your-project-id", "bucket_name": "your-bucket", "topic_name": "your-topic"}' \
-    --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+    --headers="Content-Type=application/json" \
     --attempt-deadline=1800s \
-    --location='your-region'
+    --location='your-region' \
+    --oidc--service-account-email=<service-acc-name>@<project-id>.iam.gserviceaccount.com
     ```
 
     Example code snippet:
@@ -360,10 +405,31 @@ In order to setup a Pub/Sub a few steps are necessary:
     --http-method=POST \
     --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/db-func-pubsub" \
     --message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447", "prefix_path": "dokkan-battle", "topic_name": "db-topic"}' \
-    --headers="Authorization=Bearer $(gcloud auth print-identity-token),Content-Type=application/json" \
+    --headers="Content-Type=application/json" \
     --attempt-deadline=1800s \
-    --location='europe-west3'
+    --location='europe-west3' \
+    --oidc-service-account-email=cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com
     ```
+
+7.  You must assign the Invoker role (roles/run.invoker) through Cloud Run for 2nd gen functions if you want to allow the function to receive requests from additional principals or other given authorities in IAM. Therefore you need to grant the cloud function the permission to be invoked by a service account.
+
+    General code snippet:
+
+    ```shell
+    gcloud functions add-invoker-policy-binding <function-name> \
+        --member="serviceAccount:<service-acc-name>@<project-id>.iam.gserviceaccount.com" \
+        --region='<your-region>'
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud functions add-invoker-policy-binding db-func-pubsub \
+        --member="serviceAccount:cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com" \
+        --region='europe-west3'
+    ```
+
+    Keep in mind that it can take a few minutes until the permissions granted this way take effect. If cloud scheduler fails to invoke the cloud function shortly after deploying wait a few minutes and try again.
 
 ## 7. Cloud function deployment using terraform (COMING SOON)
 

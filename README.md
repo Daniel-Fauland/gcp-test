@@ -37,3 +37,18 @@ In summary, Google Cloud Functions offers a serverless and event-driven architec
 ## Cloud scheduler
 
 Google Cloud Scheduler is a fully managed cron job service provided by Google Cloud Platform (GCP). It allows users to schedule and automate recurring tasks, such as calling HTTP/S endpoints or running Pub/Sub messages, using HTTP, HTTPS, or Pub/Sub as the target endpoint. It offers advanced features like job monitoring, retry mechanisms, time zone support, and task management through the console or API. With Cloud Scheduler, users can easily schedule and manage their tasks in the cloud, eliminating the need for manual intervention and improving operational efficiency.
+
+## IAM & Admin
+
+Google Cloud Identity and Access Management (IAM) is a service provided by Google Cloud Platform (GCP) that allows you to manage and control access to your cloud resources. It's a fundamental aspect of GCP's security and access control framework, enabling you to define who has what level of access to your resources and services within your Google Cloud projects.
+
+IAM provides the following key features:
+
+- Access Control: IAM allows you to grant and manage permissions for users, groups, and service accounts at a granular level. You can assign predefined roles (like Viewer, Editor, and Owner) or custom roles that you define to control what actions users can perform on specific resources.
+- Resource Hierarchy: GCP resources are organized in a hierarchical structure, such as projects, folders, and resources within projects. IAM permissions can be granted at different levels of this hierarchy, ensuring that access is controlled at the appropriate level.
+- Principle of Least Privilege: IAM follows the principle of least privilege, meaning that users and services are only granted the minimum necessary permissions to perform their tasks. This helps reduce the risk of accidental or intentional misuse of privileges.
+- Service Accounts: IAM supports service accounts, which are identities used by applications and services to access GCP resources. Service accounts can be granted permissions just like human users.
+- Audit and Monitoring: IAM provides audit logs that allow you to track who did what, when, and where in your GCP environment. This is crucial for security and compliance purposes.
+- Identity Federation: You can integrate IAM with external identity providers, allowing users to log in using their existing credentials.
+
+In summary, GCP IAM & Admin is a vital tool for securing your cloud environment, managing access to resources, and maintaining a strong security posture for your Google Cloud Platform projects. It helps you ensure that only authorized users and services can interact with your cloud resources, enhancing both security and operational efficiency.

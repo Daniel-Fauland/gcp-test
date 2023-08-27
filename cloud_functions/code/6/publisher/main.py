@@ -411,5 +411,5 @@ def start_script(request):
     data = {"project_id": project_id, "bucket_name": bucket_name, "prefix_path": prefix_path}
     data_str = json.dumps(data).encode('utf-8')  # Convert dictionary to JSON-encoded bytestring
     publisher.publish(topic_path, data=data_str)
-    print(f"Printing json message being published: {data_str.decode('utf-8')}")
+    print(f"Printing json message being published: {data}")
     return f"Run successfull. Files stored in bucket: {bucket_name} "
