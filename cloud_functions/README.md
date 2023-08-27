@@ -9,7 +9,7 @@ Contents:
 3. [Parameterize script in cloud functions](#3-parameterize-script-in-cloud-functions)
 4. [Schedule a non paremterized cloud function using Cloud Scheduler](#4-schedule-a-non-paremterized-cloud-function-using-cloud-scheduler)
 5. [Schedule a parameterized cloud function using gcloud command line](#5-schedule-a-parameterized-cloud-function-using-gcloud-command-line)
-6. [Trigger action based on event using Pub/Sub](#6-trigger-action-based-on-event-using-pubsub)
+6. [Trigger action based on event using Pub/Sub with 2 different service accounts](#6-trigger-action-based-on-event-using-pubsub-with-2-different-service-accounts)
 
 In case you don't have your own python script for testing you can use the provided scripts for each chapter.
 
@@ -270,11 +270,13 @@ However it is possible to pass a json object instead.
    curl -X POST -H "Authorization: bearer $(gcloud auth print-identity-token)" -H "Content-Type: application/json" -d '{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447"}' https://europe-west3-propane-nomad-396712.cloudfunctions.net/dokkan-battle-function-parameterized
    ```
 
-## 6. Trigger action based on event using Pub/Sub
+## 6. Trigger action based on event using Pub/Sub with 2 different service accounts
 
 (Use [6-dbz_db-cloud_function-short-pubsub.py)](./code/6/publisher/6-dbz_db-cloud_function-short-pubsub.py) and [6-pubsub-action.py](./code/6/subscriber/6-pubsub-action.py) if you don't have your own python script)
 
 If you want to schedule certain tasks event based instead instead of time based you can use a service like [Pub/Sub](https://cloud.google.com/pubsub/docs/overview). The example python script will create files in the gcp storage bucket with a timestamp. One way of deleting older files within this bucket is to setup a "clean-up" cloud function that is triggered whenever cloud scheduler successfully executed the main cloud function. In this particular use case, alternative (faster) solutions are available, such as implementing file retention within a GCP storage bucket. However, it's important to note that these alternatives are static in nature. They would consistently delete files once the defined retention period is met, regardless of whether cloud functions have effectively generated these files.
+
+In this example 2 different service accounts for function A and function B are used.
 In order to setup a Pub/Sub a few steps are necessary:
 
 1.  Prepare a script for another cloud function that will be triggered by the Pub/Sub setup. (e.g. [6-pubsub-action.py](./code/6/subscriber/6-pubsub-action.py))
@@ -290,9 +292,40 @@ In order to setup a Pub/Sub a few steps are necessary:
         publisher.publish(topic_path, data=data)
     ```
 
-    It's a good idea to parameterize the main cloud function and the second cloud function that will be triggered by your Pub/Sub setup so that you only need to changes variables in your cloud scheduler
+    It's a good idea to parameterize the main cloud function and the second cloud function that will be triggered by your Pub/Sub setup so that you only need to change variables in your cloud scheduler
 
-3.  Now you need to create the Pub/Sub topic where your main cloud function can actually publish a message to. This can be done easily via gcloud in terminal.
+3.  [Create a service account](../iam/README.md#create-service-account) for cloud function **A** which will be the **publisher** of the pub/sub topic. Choose a name (e.g. _sa-func-a_) and grant the following roles:
+
+    - Pub/Sub Publisher: This role allows the service account to publish messages to a Pub/Sub topic
+    - Storage Admin: This role allows the service account to list, view, create and delete buckets & objects in cloud storage (This is needed as the example python script creates files in cloud storage)
+
+4.  [Create a service account](../iam/README.md#create-service-account) for cloud function **B** which will be the **subscribe** to the pub/sub topic. Choose a name (e.g. _sa-func-b_) and grant the following roles:
+
+    - Pub/Sub Subscriber: This role allows the service account to receive messages from a Pub/Sub topic
+    - Storage Admin: This role allows the service account to list, view, create and delete buckets & objects in cloud storage (This is needed as the example python script will list objects in the bucket and delete those objects)
+    - Cloud Functions Invoker: This role allows the cloud function to invoke another cloud function. This is needed because after receiving a Pub/Sub message this service account will invoke the cloud function B.
+
+    **Note:** If you use the same service account for both cloud functions you would need to grant all the permissions listed for _sa-func-a_ and _sa-func-b_. You can easily check the set roles for your service account using gcloud:
+
+    General code snippet:
+
+    ```shell
+    gcloud projects get-iam-policy <project-id> \
+    --flatten="bindings[].members" \
+    --format="table(bindings.role)" \
+    --filter="bindings.members:serviceAccount:<service-account>@<project-id>.iam.gserviceaccount.com"
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud projects get-iam-policy propane-nomad-396712 \
+    --flatten="bindings[].members" \
+    --format="table(bindings.role)" \
+    --filter="bindings.members:serviceAccount:sa-func-b@propane-nomad-396712.iam.gserviceaccount.com"
+    ```
+
+5.  Now you need to create the Pub/Sub topic itself where your main cloud function can actually publish a message to. This can be done easily via gcloud in terminal.
 
     General code snippet:
 
@@ -303,10 +336,10 @@ In order to setup a Pub/Sub a few steps are necessary:
     Example code snippet:
 
     ```shell
-    gcloud pubsub topics create db-topic
+    gcloud pubsub topics create my-topic
     ```
 
-4.  Now deploy the main function using http trigger. This function will later be triggered by cloud scheduler. This can also be deployed via gcloud command.
+6.  Now deploy the main function using http trigger. This function will later be triggered by cloud scheduler. This can also be deployed via gcloud command.
 
     General code snippet:
 
@@ -329,7 +362,7 @@ In order to setup a Pub/Sub a few steps are necessary:
     Example code snippet:
 
     ```shell
-    gcloud functions deploy db-func-pubsub \
+    gcloud functions deploy cf-func-a \
     --runtime=python310 \
     --trigger-http \
     --entry-point=start_script \
@@ -337,14 +370,14 @@ In order to setup a Pub/Sub a few steps are necessary:
     --max-instances=1 \
     --timeout=3500s \
     --memory=1GiB \
-    --service-account=973117053722-compute@developer.gserviceaccount.com \
+    --service-account=sa-func-a@propane-nomad-396712.iam.gserviceaccount.com \
     --ingress-settings=all \
     --no-allow-unauthenticated \
     --gen2 \
     --source=./cloud_functions/code/6/publisher/
     ```
 
-5.  Now deploy the other cloud function using Pub/Sub trigger which will be executed once the main cloud function publishes a message on a topic this function is subscribed to.
+7.  Now deploy the other cloud function using Pub/Sub trigger which will be executed once the main cloud function publishes a message on a topic this function is subscribed to.
 
     General code snippet:
 
@@ -366,22 +399,22 @@ In order to setup a Pub/Sub a few steps are necessary:
     Example code snippet:
 
     ```shell
-    gcloud functions deploy func-pubsub-subscriber \
+    gcloud functions deploy cf-func-b \
     --runtime=python310 \
-    --trigger-topic=db-topic \
+    --trigger-topic=my-topic \
     --entry-point=pubsub_handler \
     --region=europe-west3 \
     --max-instances=1 \
     --timeout=60s \
     --memory=256MiB \
-    --service-account=973117053722-compute@developer.gserviceaccount.com \
+    --service-account=sa-func-b@propane-nomad-396712.iam.gserviceaccount.com \
     --ingress-settings=all \
     --no-allow-unauthenticated \
     --gen2 \
     --source=./cloud_functions/code/6/subscriber/
     ```
 
-6.  Optional: Deploy a Cloud scheduler that will run your pubsub function on a daily basis.
+8.  Optional: Deploy a Cloud scheduler that will run your pubsub function on a daily basis.
 
     General code snippet:
 
@@ -400,18 +433,18 @@ In order to setup a Pub/Sub a few steps are necessary:
     Example code snippet:
 
     ```shell
-    gcloud scheduler jobs create http db-scheduler-pubsub \
+    gcloud scheduler jobs create http func-a-scheduler \
     --schedule="0 4 * * *" \
     --http-method=POST \
-    --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/db-func-pubsub" \
-    --message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447", "prefix_path": "dokkan-battle", "topic_name": "db-topic"}' \
+    --uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/cf-func-a" \
+    --message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447", "prefix_path": "dokkan-battle", "topic_name": "my-topic"}' \
     --headers="Content-Type=application/json" \
     --attempt-deadline=1800s \
     --location='europe-west3' \
     --oidc-service-account-email=cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com
     ```
 
-7.  You must assign the Invoker role (roles/run.invoker) through Cloud Run for 2nd gen functions if you want to allow the function to receive requests from additional principals or other given authorities in IAM. Therefore you need to grant the cloud function the permission to be invoked by a service account.
+9.  You must assign the Invoker role (roles/run.invoker) through Cloud Run for 2nd gen functions if you want to allow the function to receive requests from additional principals or other given authorities in IAM. Therefore you need to grant the cloud function the permission to be invoked by a service account.
 
     General code snippet:
 
@@ -424,8 +457,28 @@ In order to setup a Pub/Sub a few steps are necessary:
     Example code snippet:
 
     ```shell
-    gcloud functions add-invoker-policy-binding db-func-pubsub \
+    gcloud functions add-invoker-policy-binding cf-func-a \
         --member="serviceAccount:cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com" \
+        --region='europe-west3'
+    ```
+
+    Keep in mind that it can take a few minutes until the permissions granted this way take effect. If cloud scheduler fails to invoke the cloud function shortly after deploying wait a few minutes and try again.
+
+10. You also need to grant the service account of function B (e.g. _sa-func-b_) the permission to invoke function B (e.g. cf-func-b):
+
+    General code snippet:
+
+    ```shell
+    gcloud functions add-invoker-policy-binding <function-name> \
+        --member="serviceAccount:<service-acc-name>@<project-id>.iam.gserviceaccount.com" \
+        --region='<your-region>'
+    ```
+
+    Example code snippet:
+
+    ```shell
+    gcloud functions add-invoker-policy-binding cf-func-b \
+        --member="serviceAccount:sa-func-b@propane-nomad-396712.iam.gserviceaccount.com" \
         --region='europe-west3'
     ```
 

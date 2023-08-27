@@ -25,4 +25,7 @@ def pubsub_handler(event, context):
         for blob in blobs_to_delete:
             blob.delete()
             print(f"Deleted: {blob.name}")
+    else:
+        print(f"No blobs deleted as there are only {len(sorted_blobs)} files present.")
+    return "Run successfull."
 
