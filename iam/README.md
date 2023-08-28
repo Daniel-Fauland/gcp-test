@@ -6,7 +6,8 @@ Contents:
 
 - [Overview between different IAM entities](#overview-between-different-iam-entities)
 - [Create service account](#create-service-account)
-- [Grant permissions/roles to an existing service account](#grant-permissionsroles-to-an-existing-service-account)
+- [Grant permissions/roles to a service account on project level](#grant-permissionsroles-to-a-service-account-on-project-level)
+- [Grant permissions/roles to a service account on resource level](#grant-permissionsroles-to-a-service-account-on-resource-level)
 - [View roles granted to an existing service account](#view-roles-granted-to-an-existing-service-account)
 
 ## Overview between different IAM entities
@@ -36,30 +37,65 @@ In order to create a service account follow these steps:
 6. Grant this service account access to project by adding one or multiple roles (e.g. _Cloud Functions Invoker_)
 7. Optional: You can grant users or groups the permission to deploy services using this service account
 
-## Grant permissions/roles to an existing service account
+## Grant permissions/roles to a service account on project level
 
-The easiest way to grant permissions to a service account is assigning it a role via gcloud.
-General code snippet:
+If you want to assign a certail role/permission to a user or service account on a project level you can do this easily using gcloud.
+
+<details>
+<summary>Show general code snippet:</summary>
 
 ```shell
-gcloud <gcp-service> add-iam-policy-binding <resource-name> \
+gcloud projects add-iam-policy-binding <proejct-id> \
   --member="serviceAccount:<service-acc-name>@<project-id>.iam.gserviceaccount.com" \
   --role="roles/<gcp-resource>.<type>"
 ```
 
-Example code snippet:
+</details>
+
+<details open>
+<summary>Show example code snippet:</summary>
 
 ```shell
-gcloud functions add-iam-policy-binding func-pubsub-subscriber \
+gcloud projects add-iam-policy-binding propane-nomad-396712 \
+  --member="serviceAccount:sa-func-b@propane-nomad-396712.iam.gserviceaccount.com" \
+  --role="roles/bigquery.admin"
+```
+
+</details>
+
+## Grant permissions/roles to a service account on resource level
+
+Certain roles for service accounts can not be granted on project level but must be granted on resource level instead. For example you can not grant a service account the general permission to invoke cloud functions. This has to be done for each cloud function individually due to security reasons.
+The easiest way to grant permissions to a service account is assigning it a role via gcloud.
+
+<details>
+<summary>Show general code snippet:</summary>
+
+```shell
+gcloud <gcp-service> add-invoker-policy-binding <resource-name> \
+  --member="serviceAccount:<service-acc-name>@<project-id>.iam.gserviceaccount.com" \
+  --role="roles/<gcp-resource>.<type>"
+```
+
+</details>
+
+<details open>
+<summary>Show example code snippet:</summary>
+
+```shell
+gcloud functions add-invoker-policy-binding func-pubsub-subscriber \
   --member="serviceAccount:cloud-function-a@propane-nomad-396712.iam.gserviceaccount.com" \
   --role="roles/cloudfunctions.invoker"
 ```
+
+</details>
 
 ## View roles granted to an existing service account
 
 In order to check all given roles to a service account the fastet way is to use gcloud:
 
-General code snippet:
+<details>
+<summary>Show general code snippet:</summary>
 
 ```shell
 gcloud projects get-iam-policy <project-id> \
@@ -68,7 +104,10 @@ gcloud projects get-iam-policy <project-id> \
 --filter="bindings.members:serviceAccount:<service-account>@<project-id>.iam.gserviceaccount.com"
 ```
 
-Example code snippet:
+</details>
+
+<details open>
+<summary>Show example code snippet:</summary>
 
 ```shell
 gcloud projects get-iam-policy propane-nomad-396712 \
@@ -76,3 +115,5 @@ gcloud projects get-iam-policy propane-nomad-396712 \
 --format="table(bindings.role)" \
 --filter="bindings.members:serviceAccount:sa-func-b@propane-nomad-396712.iam.gserviceaccount.com"
 ```
+
+</details>

@@ -716,7 +716,7 @@ In this tutorial option **3** will be shown:
 
    </details>
 
-8. Since the new cloud function access BigQuery the underlying service account _sa-func-b_ in this example needs the bigquery.user role. This allows it to create jobs in general, however since I don't give any other permissions yet it cannot query data yet.
+8. Since the new cloud function access BigQuery the underlying service account _sa-func-b_ in this example needs the bigquery.admin role.
 
     <details>
     <summary>Show general code snippet:</summary>
