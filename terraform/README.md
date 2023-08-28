@@ -4,68 +4,28 @@ This section will cover a few hands-on tutorials using Terraform.
 
 Testing:
 
-Deploy http cloud function A:
+```python
+data_dict = {"project_id": "propane-nomad-396712", "dataset_name": "my_data", "table_name": "db_table", "row_count": 1, "csv_size": 1, "blob_size": 0, "timestamp": "2023-08-27T19:13:52.167462"}
+project_id = data_dict["project_id"]
+dataset_name = data_dict["dataset_name"]
+table_name = data_dict["table_name"]
+row_count = data_dict["row_count"]
+csv_size = data_dict["csv_size"]
+blob_size = data_dict["blob_size"]
+timestamp = data_dict["timestamp"]
 
-```shell
-gcloud functions deploy db-func-pubsub-test \
---runtime=python310 \
---trigger-http \
---entry-point=start_script \
---region=europe-west3 \
---max-instances=1 \
---timeout=3500s \
---memory=1GiB \
---service-account=cloud-function-a@propane-nomad-396712.iam.gserviceaccount.com \
---ingress-settings=all \
---no-allow-unauthenticated \
---gen2 \
---source=./cloud_functions/code/6/publisher/
+bq_client = bigquery.Client(project=project_id, location="europe-west3")
+# Get the last inserted ID from BigQuery (assuming the ID column is named 'id')
+query = f"""
+    SELECT MAX(id) as last_id FROM {project_id}.{dataset_name}.{table_name}
+"""
+query_job = bq_client.query(query)
+last_id = query_job.result()[0]['last_id']  # Will return 'None' if BQ table is empty
 ```
 
-Deploy pubsub cloud function B:
-
 ```shell
-gcloud functions deploy func-pubsub-subscriber-test \
---runtime=python310 \
---trigger-topic=db-topic \
---entry-point=pubsub_handler \
---region=europe-west3 \
---max-instances=1 \
---timeout=60s \
---memory=256MiB \
---service-account=cloud-function-b@propane-nomad-396712.iam.gserviceaccount.com \
---ingress-settings=all \
---no-allow-unauthenticated \
---gen2 \
---source=./cloud_functions/code/6/subscriber/
-```
-
-Deploy cloud scheduler
-
-```shell
-gcloud scheduler jobs create http db-scheduler-pubsub-test \
---schedule="0 4 * * *" \
---http-method=POST \
---uri="https://europe-west3-propane-nomad-396712.cloudfunctions.net/db-func-pubsub-test" \
---message-body='{"project_id": "propane-nomad-396712", "bucket_name": "de-storage-447", "prefix_path": "dokkan-battle", "topic_name": "db-topic"}' \
---headers="Content-Type=application/json" \
---attempt-deadline=1800s \
---location='europe-west3' \
---oidc-service-account-email=cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com
-```
-
-Grant invoker role to cloud scheduler to invoke publisher
-
-```shell
-gcloud functions add-invoker-policy-binding db-func-pubsub-test \
-    --member="serviceAccount:cloud-scheduler@propane-nomad-396712.iam.gserviceaccount.com" \
-    --region='europe-west3'
-```
-
-Grant invoker role to publisher to invoke subscriber
-
-```shell
-gcloud functions add-invoker-policy-binding func-pubsub-subscriber-test \
-    --member="serviceAccount:cloud-function-a@propane-nomad-396712.iam.gserviceaccount.com" \
-    --region='europe-west3'
+roles/bigquery.user
+roles/cloudfunctions.invoker
+roles/pubsub.subscriber
+roles/storage.admin
 ```

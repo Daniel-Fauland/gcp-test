@@ -1,8 +1,10 @@
 # Google Cloud Platform Tutorial
 
-Various hands-on tutorials for differnt gcp services
+Various hands-on tutorials for different gcp services
 
-## Cloud functions
+## Cloud Functions
+
+Cloud Functions tutorial can be found [here](./cloud_functions/README.md).
 
 [Google Cloud Functions](https://cloud.google.com/functions/docs) is a serverless compute service offered by Google Cloud Platform (GCP) that enables developers to build, deploy, and run event-driven functions without the need to manage the underlying infrastructure.
 
@@ -36,9 +38,13 @@ In summary, Google Cloud Functions offers a serverless and event-driven architec
 
 ## Cloud scheduler
 
+Cloud scheduler is part of the cloud fcuntions tutorial which can be found [here](./cloud_functions/README.md).
+
 Google Cloud Scheduler is a fully managed cron job service provided by Google Cloud Platform (GCP). It allows users to schedule and automate recurring tasks, such as calling HTTP/S endpoints or running Pub/Sub messages, using HTTP, HTTPS, or Pub/Sub as the target endpoint. It offers advanced features like job monitoring, retry mechanisms, time zone support, and task management through the console or API. With Cloud Scheduler, users can easily schedule and manage their tasks in the cloud, eliminating the need for manual intervention and improving operational efficiency.
 
 ## IAM & Admin
+
+IAM tutorial can be found [here](./iam/README.md).
 
 Google Cloud Identity and Access Management (IAM) is a service provided by Google Cloud Platform (GCP) that allows you to manage and control access to your cloud resources. It's a fundamental aspect of GCP's security and access control framework, enabling you to define who has what level of access to your resources and services within your Google Cloud projects.
 
@@ -52,3 +58,32 @@ IAM provides the following key features:
 - Identity Federation: You can integrate IAM with external identity providers, allowing users to log in using their existing credentials.
 
 In summary, GCP IAM & Admin is a vital tool for securing your cloud environment, managing access to resources, and maintaining a strong security posture for your Google Cloud Platform projects. It helps you ensure that only authorized users and services can interact with your cloud resources, enhancing both security and operational efficiency.
+
+## Google BigQuery Overview
+
+BigQuery tutorial can be found [here](./bigquery/README.md).
+
+Google BigQuery is a fully managed, serverless, and scalable data warehousing and analytics platform provided by Google Cloud Platform (GCP). It excels in handling large datasets and executing fast SQL-like queries through its distributed architecture.
+
+**Capabilities:**
+
+1. **Scalability:** BigQuery scales horizontally to handle massive datasets efficiently, making it suitable for petabyte-scale data.
+2. **Serverless:** Fully managed by Google, eliminating the need for infrastructure provisioning, maintenance, and scaling tasks.
+3. **Fast Query Performance:** Utilizes columnar storage and distributed processing for rapid query execution, especially for analytical tasks.
+4. **SQL-Like Query Language:** Offers a familiar SQL-like query language for easy adoption by SQL users.
+5. **Automatic Optimization:** Optimizes query execution through techniques like parallelism, data pruning, and caching.
+6. **Real-Time Analysis:** Supports real-time analysis with features like streaming inserts and table decorators.
+7. **Data Warehousing:** Serves as a central hub for consolidating and analyzing data from diverse sources.
+8. **Integration with GCP Services:** Seamlessly integrates with other GCP services, including visualization and machine learning tools.
+
+**Advantages over Traditional SQL Databases:**
+
+1. **Scalability:** Handles larger datasets and complex queries effortlessly compared to traditional SQL databases.
+2. **Performance:** Offers superior query performance due to distributed architecture and columnar storage.
+3. **Serverless Model:** Eliminates manual infrastructure management, allowing focus on data analysis.
+4. **Cost Efficiency:** Pay-as-you-go pricing based on processed data, cost-effective for sporadic workloads.
+5. **Schema Flexibility:** Supports schema-on-read, accommodating semi-structured and nested data.
+6. **Ease of Use:** Familiar SQL-like language caters to analysts and data scientists with varying expertise.
+7. **Data Sharing:** Facilitates easy sharing of datasets and queries for collaboration within and outside organizations.
+
+In summary, Google BigQuery excels in scalability, performance, serverless operation, and user-friendliness for analytical and data warehousing tasks. However, the choice between BigQuery and traditional SQL databases depends on specific use cases and infrastructure considerations.

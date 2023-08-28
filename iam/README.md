@@ -7,6 +7,7 @@ Contents:
 - [Overview between different IAM entities](#overview-between-different-iam-entities)
 - [Create service account](#create-service-account)
 - [Grant permissions/roles to an existing service account](#grant-permissionsroles-to-an-existing-service-account)
+- [View roles granted to an existing service account](#view-roles-granted-to-an-existing-service-account)
 
 ## Overview between different IAM entities
 
@@ -52,4 +53,26 @@ Example code snippet:
 gcloud functions add-iam-policy-binding func-pubsub-subscriber \
   --member="serviceAccount:cloud-function-a@propane-nomad-396712.iam.gserviceaccount.com" \
   --role="roles/cloudfunctions.invoker"
+```
+
+## View roles granted to an existing service account
+
+In order to check all given roles to a service account the fastet way is to use gcloud:
+
+General code snippet:
+
+```shell
+gcloud projects get-iam-policy <project-id> \
+--flatten="bindings[].members" \
+--format="table(bindings.role)" \
+--filter="bindings.members:serviceAccount:<service-account>@<project-id>.iam.gserviceaccount.com"
+```
+
+Example code snippet:
+
+```shell
+gcloud projects get-iam-policy propane-nomad-396712 \
+--flatten="bindings[].members" \
+--format="table(bindings.role)" \
+--filter="bindings.members:serviceAccount:sa-func-b@propane-nomad-396712.iam.gserviceaccount.com"
 ```
