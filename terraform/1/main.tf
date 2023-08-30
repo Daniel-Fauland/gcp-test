@@ -1,5 +1,5 @@
 provider "google" {
-  credentials = file("credentials.json")
+  credentials = file("../credentials.json")
   project     = "propane-nomad-396712"
   region      = "europe-west3"
 }
