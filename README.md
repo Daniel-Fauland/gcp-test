@@ -59,7 +59,7 @@ IAM provides the following key features:
 
 In summary, GCP IAM & Admin is a vital tool for securing your cloud environment, managing access to resources, and maintaining a strong security posture for your Google Cloud Platform projects. It helps you ensure that only authorized users and services can interact with your cloud resources, enhancing both security and operational efficiency.
 
-## Google BigQuery Overview
+## BigQuery
 
 BigQuery tutorial can be found [here](./bigquery/README.md).
 
@@ -87,3 +87,20 @@ Google BigQuery is a fully managed, serverless, and scalable data warehousing an
 7. **Data Sharing:** Facilitates easy sharing of datasets and queries for collaboration within and outside organizations.
 
 In summary, Google BigQuery excels in scalability, performance, serverless operation, and user-friendliness for analytical and data warehousing tasks. However, the choice between BigQuery and traditional SQL databases depends on specific use cases and infrastructure considerations.
+
+## Terraform
+
+Terraform is an open-source infrastructure-as-code (IaC) tool developed by HashiCorp. It allows you to define, provision, and manage infrastructure resources in a declarative manner, treating infrastructure as code.
+
+**Capabilities:**
+
+- Declarative Configuration: Infrastructure resources are defined in a declarative language called HashiCorp Configuration Language (HCL). This approach allows you to specify the desired state of your infrastructure, rather than writing step-by-step instructions for provisioning.
+- Infrastructure as Code: With Terraform, you can define your infrastructure using code, which brings benefits such as version control, documentation, collaboration, and the ability to reuse and share configurations.
+- Multi-Cloud Support: Terraform supports multiple cloud providers, including AWS, Azure, Google Cloud Platform, and many others. This allows you to manage infrastructure across different clouds using a consistent workflow.
+- Resource Provisioning: Terraform can provision and manage a wide range of infrastructure resources, such as virtual machines, networks, storage, load balancers, security groups, and more. It provides a comprehensive set of providers that define interactions with various platforms and services.
+- Dependency Management: Terraform automatically determines and manages the dependencies between resources, ensuring that resources are provisioned in the correct order to meet their dependencies. This simplifies the management of complex infrastructures.
+- State Management: Terraform keeps track of the current state of your infrastructure in a state file. This allows it to detect and manage changes to the infrastructure, making it easy to update and modify existing resources without causing disruptions.
+- Plan and Apply Workflow: Terraform follows a two-step workflow. First, it generates an execution plan that shows the proposed changes to your infrastructure. Then, it applies the changes to bring the infrastructure into the desired state. This helps in reducing risks and ensuring predictability.
+- Extensibility: Terraform is highly extensible, allowing you to create and share your own custom providers and modules. This enables you to extend its functionality and integrate it with existing processes and tools.
+
+In summary terraform provides a powerful and flexible way to define and manage infrastructure as code. Its declarative approach, multi-cloud support, and robust set of features make it a popular choice for automating infrastructure provisioning and management tasks.

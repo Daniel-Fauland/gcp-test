@@ -9,6 +9,7 @@ Contents:
 - [Grant permissions/roles to a service account on project level](#grant-permissionsroles-to-a-service-account-on-project-level)
 - [Grant permissions/roles to a service account on resource level](#grant-permissionsroles-to-a-service-account-on-resource-level)
 - [View roles granted to an existing service account](#view-roles-granted-to-an-existing-service-account)
+- [Create credentials json file](#create-credentials-json-file)
 
 ## Overview between different IAM entities
 
@@ -117,3 +118,14 @@ gcloud projects get-iam-policy propane-nomad-396712 \
 ```
 
 </details>
+
+## Create credentials json file
+
+You can create a credentials json file for each service account which will let you use its permissions from you local machine without having to manually authenticate first.
+This can be done the following way:
+
+1. Go to _Service Accounts_ and click on the service account of your choice
+2. Then go to _Keys_ --> Add key --> Create new key --> Json
+3. After hitting _create_ it will automatically download the file to your machine
+
+**Note:** Anyone with this file can has every permission granted to that service account from anywhere in the world without needing any further authentication. Therefore make sure you do not share/upload this file
