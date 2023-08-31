@@ -13,7 +13,7 @@ terraform -v
 
 Then create a new [service account](../iam/README.md#create-service-account) on GCP which has the global _Editor_ role so that terraform is able to create and manage resources. Now download the [credentials json](../iam/README.md#create-credentials-json-file) file of that service account so that terraform can be executed on your local machine.
 
-## Create VM instance
+## 1. Create VM instance
 
 In this example you will create a virtual machine instance on GCP using terraform. VM Instances are part of the _Compute Engine_ resource which gives you the possibility to create and manage virtualized hardware resources.
 
@@ -127,7 +127,7 @@ In this example you will create a virtual machine instance on GCP using terrafor
 
 6. After creating resources terraform will create a "terraform.tfstate" file which will basically function as a documentation for terraform which resources are in which specific state. Such a file is important if you plan to update resources that already exist as any kind of change will fail if you don't have the tfstate for your resources.
 
-## Create (sub)network and update VM instance
+## 2. Create (sub)network and update VM instance
 
 This section shows how you can update the VM instance deployed earlier by creating your own (sub)network instead of using the default one. The default network creates a subnetwork for each region gcp offers which is not necessary.
 
@@ -229,7 +229,7 @@ This section shows how you can update the VM instance deployed earlier by creati
    <summary>Show general code snippet:</summary>
 
    ```shell
-   terraform import <resource-type>.<name> <id>
+   terraform import <provider>_<product>_<resource>.<name> <id>
    ```
 
    </details>
@@ -246,7 +246,7 @@ This section shows how you can update the VM instance deployed earlier by creati
 5. Update the VM instance.
 
    ```shell
-   terraform init  # Only needed in new terminal instance
+   terraform init  # Only needed if not initialized yet
    ```
 
    ```shell
@@ -264,3 +264,161 @@ This section shows how you can update the VM instance deployed earlier by creati
    ```
 
    **Note:** Some changes like network are _non-destructive_ which means that the resource can be updated in-place. However other changes like hardware configuration or os image are _destructive_ changes and will delete and redeploy the resource rather than updating it.
+
+## 3. Using input variables
+
+In Terraform, input variables allow you to parameterize your configuration and define values that can be used throughout your code. Input variables enable you to make your configuration more flexible and reusable by allowing you to pass values dynamically when running Terraform commands. You can define and use variables by following these steps.
+
+1. Create a new .tf file (e.g. _variables.tf_)
+2. Define your variables. You can set default values so that you don't need to specify them later on in your terminal.
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   variable "<variable-name>" {
+   default = "<default-value>"
+   }
+   variable "<variable-name2>" {}
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   variable "project" {
+   default = "propane-nomad-396712"
+   }
+   variable "credentials_file" {
+   default = "../credentials.json"
+   }
+   variable "region" {
+   default = "europe-west3"
+   }
+
+   variable "machine_type" {}
+   ```
+
+   </details>
+
+3. Now use the variables in your main.tf file.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   provider "<provider-name>" {
+   credentials = file(var.<variable-name>)
+   project     = var.<variable-name2>
+   region      = "<your-region>"
+   }
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   provider "google" {
+   credentials = file(var.credentials_file)
+   project     = var.project
+   region      = var.region
+   }
+
+   resource "google_compute_instance" "vm_instance" {
+   name                      = "my-vm"
+   machine_type              = var.machine_type
+   }
+   ```
+
+   </details>
+
+4. You can either pass all variable values via the cli or via a _terraform.tfvars_ file. You don't need to spefiy the variables that have a default value but you can override these defaults in the cli or tfvars file if you want to. The _terraform.tfvars_ file will be auto-detected so you don't need to pass any arguments to the cli.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   terraform plan -var <variable-name>="<variable-value>" -var <variable-name2>="<variable-value2>"
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   terraform plan -var machine="e2-small" -var project="propane-nomad-396712"
+   ```
+
+   </details>
+
+5. Deploy the resources. Make sure you also include the arguments when executing terraform apply if you don't have a _terraform.tfvars_ file.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   terraform apply -var <variable-name>="<variable-value>" -var <variable-name2>="<variable-value2>"
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   terraform apply -var machine="e2-small" -var project="propane-nomad-396712"
+   ```
+
+   </details>
+
+## Recreate and delete resources using taint and destroy
+
+- Terraform taint is a command in Terraform, an infrastructure as code tool, that marks a resource as tainted. Tainting a resource means that Terraform considers it to be potentially corrupted or incorrect. When a resource is tainted, it will be destroyed and recreated on the next apply, even if no changes were made to its configuration. This can be useful in cases where a resource is in an unexpected state and needs to be rebuilt. It will only be executed **after** you **apply** your build.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+  ```shell
+  terraform taint <provider>_<product>_<resource>.<name>
+  ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+  ```shell
+  terraform taint google_compute_instance.vm_instance
+  ```
+
+   </details>
+
+- Destroy on the other hand lets you delete delete resources created by terraform completely. However it can only destroy resources that were created by terraform in the first place and nothing else. It will automatically destroy resources in the correct order (like subnetwork before network) to prevent any errors in the cloud. You can either destroy all resources at once or a specific resource.
+
+  ```shell
+  terraform destroy
+  ```
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+  ```shell
+  terraform destroy -target=<provider>_<product>_<resource>.<name>
+  ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+  ```shell
+  terraform destroy -target=google_compute_instance.vm_instance
+  ```
+
+   </details>
+
+  **Note**: Even if you only want to destroy a specific resource terraform will always delete all dependencies as well.
