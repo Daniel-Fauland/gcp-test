@@ -124,3 +124,143 @@ In this example you will create a virtual machine instance on GCP using terrafor
    ```
 
    **Note:** A VM costs money just by running even if there is no traffic/data on it. Therefore if it's not in use you can stop the VM to prevent being charged. You don't need to delete & redeploy the vm every time.
+
+6. After creating resources terraform will create a "terraform.tfstate" file which will basically function as a documentation for terraform which resources are in which specific state. Such a file is important if you plan to update resources that already exist as any kind of change will fail if you don't have the tfstate for your resources.
+
+## Create (sub)network and update VM instance
+
+This section shows how you can update the VM instance deployed earlier by creating your own (sub)network instead of using the default one. The default network creates a subnetwork for each region gcp offers which is not necessary.
+
+1. Create a new resource which will use the network category. There you can turn off the default behaviour of automatically creating subnetworks.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   resource "<provider>_<product>_network" "<tf-network-name>" {
+   name                    = "<network-name>"
+   auto_create_subnetworks = false
+   }
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   resource "google_compute_network" "terraform_network" {
+   name                    = "terraform-network"
+   auto_create_subnetworks = false
+   }
+   ```
+
+   </details>
+
+2. Then create your own subnetwork and assign it to your network.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   resource "<provider>_<product>_subnetwork" "<tf-subnetwork-name>" {
+   name          = "<subnetwork-name>"
+   ip_cidr_range = "X.X.X.X/X"
+   region        = "<your-region>"
+   network       = <provider>_<product>_network.<tf-network-name>.id
+   }
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   resource "google_compute_subnetwork" "terraform_subnet" {
+   name          = "terraform-subnetwork"
+   ip_cidr_range = "10.20.0.0/16"
+   region        = "europe-west3"
+   network       = google_compute_network.terraform_network.id
+   }
+   ```
+
+   </details>
+
+3. Use the new network instead of the default network for the VM instance.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   resource "<provider>_<product>_<resource>" "<tf-resource-name>" {
+   # ...
+
+   network_interface {
+      network    = <provider>_<product>_network.<tf-network-name>.self_link
+      subnetwork = <provider>_<product>_subnetwork.<tf-subnetwork-name>.self_link
+      access_config {}
+   }
+   }
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   resource "google_compute_instance" "vm_instance" {
+   # ...
+
+   network_interface {
+      network    = google_compute_network.terraform_network.self_link
+      subnetwork = google_compute_subnetwork.terraform_subnet.self_link
+      access_config {}
+   }
+   }
+   ```
+
+   </details>
+
+4. If you don't have the _terraform.tfstate_ file the update will fail. Therefore you need to get the state of your resource for each resource you plan to change indivudally.
+
+   <details>
+   <summary>Show general code snippet:</summary>
+
+   ```shell
+   terraform import <resource-type>.<name> <id>
+   ```
+
+   </details>
+
+   <details open>
+   <summary>Show example code snippet:</summary>
+
+   ```shell
+   terraform import google_compute_instance.vm_instance projects/propane-nomad-396712/zones/europe-west3-c/instances/my-vm
+   ```
+
+   </details>
+
+5. Update the VM instance.
+
+   ```shell
+   terraform init  # Only needed in new terminal instance
+   ```
+
+   ```shell
+   terraform plan
+   ```
+
+   ```shell
+   terraform apply
+   ```
+
+6. The VM instance should be updated after a few seconds and now have the newly created (sub)network assigned to it. You can check the networks list with gcloud for example.
+
+   ```shell
+   gcloud compute networks list
+   ```
+
+   **Note:** Some changes like network are _non-destructive_ which means that the resource can be updated in-place. However other changes like hardware configuration or os image are _destructive_ changes and will delete and redeploy the resource rather than updating it.
