@@ -2,6 +2,13 @@
 
 This section will cover a few hands-on tutorials using Terraform.
 
+0. [Prerequisites](#prerequisites)
+1. [Create VM instance](#1-create-vm-instance)
+2. [Create (sub)network and update VM instance](#2-create-subnetwork-and-update-vm-instance)
+3. [Using input variables](#3-using-input-variables)
+4. [Variable types & validation rules](#4-variable-types--validation-rules)
+5. [Recreate and delete resources using taint and destroy](#5-recreate-and-delete-resources-using-taint-and-destroy)
+
 ## Prerequisites
 
 To get started make sure you have [terraform](https://www.terraform.io) installed on your local machine.
@@ -12,6 +19,8 @@ terraform -v
 ```
 
 Then create a new [service account](../iam/README.md#create-service-account) on GCP which has the global _Editor_ role so that terraform is able to create and manage resources. Now download the [credentials json](../iam/README.md#create-credentials-json-file) file of that service account so that terraform can be executed on your local machine.
+
+To get syntax highliting and auto format install the _HashiCorp Terraform_ extension for VSC. Syntax highliting will be activated automatically after installing. In order to activate to auto format make sure you have auto format enabled in general (go to settings --> search for _format on save_ --> turn on _format on save_). Then open any terraform script in VSC --> select everything --> format document --> Choose terraform formatter when asked.
 
 ## 1. Create VM instance
 
@@ -267,6 +276,8 @@ This section shows how you can update the VM instance deployed earlier by creati
 
 ## 3. Using input variables
 
+(In case resource creation fails due to already existing you can destroy those resources first by following the steps mentioned in this [chapter](#5-recreate-and-delete-resources-using-taint-and-destroy).)
+
 In Terraform, input variables allow you to parameterize your configuration and define values that can be used throughout your code. Input variables enable you to make your configuration more flexible and reusable by allowing you to pass values dynamically when running Terraform commands. You can define and use variables by following these steps.
 
 1. Create a new .tf file (e.g. _variables.tf_)
@@ -375,7 +386,127 @@ In Terraform, input variables allow you to parameterize your configuration and d
 
    </details>
 
-## Recreate and delete resources using taint and destroy
+## 4. Variable types & validation rules
+
+You have the option to assign variables certain data types like string, number, list, tuple, etc. The values will automatically be converted to the defined data type if possible and return an error if not possible. There are simple and complex data types. Complex data types are basically data types that have any kind of key, value pair while simple data types are pretty much everything else.
+
+<details open>
+<summary>Simple data types example:</summary>
+
+```shell
+variable "example1" {
+  type        = string
+  description = "String variable"
+  default     = "abc"
+}
+
+variable "example2" {
+  type        = number
+  description = "Number variable"
+  default     = 123 # Same as "123"
+}
+
+variable "example3" {
+  type        = any
+  description = "Can hold any value"
+  default     = "123" # or "abc" or true
+}
+
+variable "example4" {
+  type        = list(any)
+  description = "List variable that can hold any value"
+  default     = [1, 2, "abc", true]
+}
+
+variable "example5" {
+  type        = list(string)
+  description = "List variable that can only hold string values"
+  default     = [1, 2, "abc", true] # Everything will be converted to string
+}
+
+variable "example6" {
+  type        = set(string)
+  description = "Set variable"
+  default     = [1, 2, 2, true] # set does not have order and does not care about repetition --> ["1", "2", "true"]
+}
+
+variable "example7" {
+  type        = tuple([string, number, bool])
+  description = "Tuple variable"
+  default     = ["2.5", 3, "true"] # Will be converted to --> [2.5, 3, true]
+}
+```
+
+</details>
+
+<details open>
+<summary>Complex data types example:</summary>
+
+```shell
+variable "example8" {
+  type        = map(string)
+  description = "Map variable (can only hold the same data types)"
+  default = {
+    var1 = "value1"
+    var2 = "value2"
+    var3 = "value3"
+  }
+}
+
+variable "example9" {
+  type = object({
+    var4 = string
+    var5 = bool
+    var6 = number
+    var7 = object({
+      var7_1 = string
+      var7_2 = any
+    })
+  })
+  description = "Object variable (can hold all data types and can be nested)"
+  default = {
+    var4 = "value4"
+    var5 = true
+    var6 = 2.5
+    var7 = {
+      var7_1 = "abc"
+      var7_2 = true
+    }
+  }
+}
+```
+
+It's possible to implement validations within variables that check for certain user defined conidtions like length. If the condition is not met the error message will be returned when trying to plan or apply the terraform script.
+
+```shell
+variable "vm_disk" {
+  type = object({
+    image = string
+    size  = number
+  })
+  description = "Define paramters for the vm boot disk"
+  default = {
+    image = "debian-cloud/debian-11"
+    size  = "10" # 10 GB boot disk
+  }
+  validation {
+    condition     = length(var.vm_disk.image) > 3
+    error_message = "Not a valid boot image."
+  }
+}
+```
+
+</details>
+
+The variables can be used in the terraform script the following way.
+
+```shell
+var.vm_instance[i]        # tuples
+var.vm_disk.image         # objects
+var.example9.var7.var7_1  # nested object
+```
+
+## 5. Recreate and delete resources using taint and destroy
 
 - Terraform taint is a command in Terraform, an infrastructure as code tool, that marks a resource as tainted. Tainting a resource means that Terraform considers it to be potentially corrupted or incorrect. When a resource is tainted, it will be destroyed and recreated on the next apply, even if no changes were made to its configuration. This can be useful in cases where a resource is in an unexpected state and needs to be rebuilt. It will only be executed **after** you **apply** your build.
 
